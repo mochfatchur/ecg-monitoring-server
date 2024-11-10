@@ -11,9 +11,9 @@ mqttClient.on('connect', () => {
   // Subscribe to topic
   mqttClient.subscribe('temperature', (err) => {
     if (err) {
-      console.error('Failed to subscribe to topic: home/temperature', err);
+      console.error(`Failed to subscribe to topic: ${process.env.TOPIC_SUBSCRIBE}`, err);
     } else {
-      console.log('Successfully subscribed to home/temperature');
+      console.log(`Successfully subscribed to topic ${process.env.TOPIC_SUBSCRIBE}`);
     }
   });
 });
