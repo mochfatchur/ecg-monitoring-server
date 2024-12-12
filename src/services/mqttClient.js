@@ -1,5 +1,5 @@
 import mqtt from 'mqtt';
-import { MQTT_BROKER_IP_ADDRESS } from '../config.js';
+import { MQTT_BROKER_IP_ADDRESS, TOPIC_SUBSCRIBE } from '../config.js';
 import { wss } from './websocket.js';
 
 // MQTT Client Setup
@@ -9,7 +9,7 @@ mqttClient.on('connect', () => {
   console.log('Connected to MQTT Broker');
   
   // Subscribe to topic
-  mqttClient.subscribe('temperature', (err) => {
+  mqttClient.subscribe(TOPIC_SUBSCRIBE, (err) => {
     if (err) {
       console.error(`Failed to subscribe to topic: ${process.env.TOPIC_SUBSCRIBE}`, err);
     } else {
