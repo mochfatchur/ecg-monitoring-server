@@ -1,8 +1,8 @@
-import express from 'express';
-import { APP_PORT } from './config.js';
-import router from './routes/index.js';
-import './services/websocket.js';  // Initialize WebSocket
-import './services/mqttClient.js'; // Initialize MQTT
+const express = require('express');
+const { APP_PORT } = require('./config/appConfig.js');
+const router = require('./routes/index.js');
+require('./services/websocket.js');  // Initialize WebSocket
+require('./services/mqttClient.js'); // Initialize MQTT
 
 // Express Setup
 const app = express();

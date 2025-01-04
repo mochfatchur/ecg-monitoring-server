@@ -1,8 +1,8 @@
-import { WebSocketServer } from 'ws';
-import { WS_PORT } from '../config.js';
+const { WebSocketServer } = require('ws');
+const { WS_PORT } = require('../config/appConfig.js');
 
 // WebSocket Setup
-export const wss = new WebSocketServer({ port: WS_PORT });
+const wss = new WebSocketServer({ port: WS_PORT });
 
 wss.on('connection', (ws) => {
   console.log('WebSocket client connected');
@@ -20,3 +20,5 @@ wss.on('connection', (ws) => {
 wss.on('error', (error) => {
   console.error('WebSocket Server Error:', error);
 });
+
+module.exports = wss;
