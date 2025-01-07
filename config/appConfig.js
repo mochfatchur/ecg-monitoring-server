@@ -12,11 +12,14 @@ const Jwt = {
     expiresIn: process.env.JWT_EXPIRES_IN
 };
 
+const ClientOrigin = process.env.CLIENT_BASE_URL;
+
 
 module.exports = {
     APP_PORT,
     WS_PORT,
     MQTT_BROKER_IP_ADDRESS,
     TOPIC_SUBSCRIBE,
-    Jwt
+    Jwt,
+    ClientOrigin
 };

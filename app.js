@@ -1,11 +1,17 @@
 const express = require('express');
-const { APP_PORT } = require('./config/appConfig.js');
+const cors = require('cors');
+const { APP_PORT, ClientOrigin } = require('./config/appConfig.js');
 const router = require('./routes/index.js');
 require('./services/websocket.js');  // Initialize WebSocket
 require('./services/mqttClient.js'); // Initialize MQTT
 
 // Express Setup
 const app = express();
+
+// Enable CORS for all origins
+app.use(cors({
+  origin: ClientOrigin
+}));
 
 // Body Parser Middleware
 app.use(express.json());
