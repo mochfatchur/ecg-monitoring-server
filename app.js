@@ -9,8 +9,12 @@ require('./services/mqttClient.js'); // Initialize MQTT
 const app = express();
 
 // Enable CORS for all origins
+// app.use(cors({
+//   origin: ClientOrigin
+// }));
+
 app.use(cors({
-  origin: ClientOrigin
+  origin: '*'
 }));
 
 // Body Parser Middleware
