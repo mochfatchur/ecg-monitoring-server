@@ -43,7 +43,9 @@ mqttClient.on('message', (topic, message) => {
   const decryptedMsg = decrypt(sessionKey, iv_hex, adBuffer, cipher_hex);
 
   // timestamp
-  const serverTimestamp = Math.floor(Date.now() / 1000); // sekarang dalam detik
+  // const serverTimestamp = Math.floor(Date.now() / 1000); // sekarang dalam detik
+  const serverTimestamp = Date.now(); // sekarang dalam detik
+  console.log("Server Time (ms):", serverTimestamp);
 
   checkTimestampDelay(ad, serverTimestamp)
 
