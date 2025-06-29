@@ -3,6 +3,7 @@ const { MQTT_BROKER_IP_ADDRESS, TOPIC_SUBSCRIBE } = require('../config/appConfig
 const wss = require('./websocket.js');
 const sessionStore = require('../keys/sessionStore');
 const { decrypt } = require('../services/cryptography/ascon');
+const { decryptAESGCM } = require('../services/cryptography/aesgcm');
 const {checkTimestampDelay} = require("../utils/time");
 
 // MQTT Client Setup
@@ -40,14 +41,17 @@ mqttClient.on('message', (topic, message) => {
   const adBuffer = Buffer.from(ad);  // misalnya "1724899123"
 
   // Decrypt Message
-  const decryptedMsg = decrypt(sessionKey, iv_hex, adBuffer, cipher_hex);
+  // ASCON AEAD
+  // const decryptedMsg = decrypt(sessionKey, iv_hex, adBuffer, cipher_hex);
+  //AES-GCM
+  const decryptedMsg = decryptAESGCM(sessionKey, iv_hex, adBuffer, cipher_hex);
 
   // timestamp
   // const serverTimestamp = Math.floor(Date.now() / 1000); // sekarang dalam detik
   const serverTimestamp = Date.now(); // sekarang dalam detik
-  console.log("Server Time (ms):", serverTimestamp);
+  // console.log("Server Time (ms):", serverTimestamp);
 
-  checkTimestampDelay(ad, serverTimestamp)
+  // checkTimestampDelay(ad, serverTimestamp)
 
   console.log('WS PUSH: Decrypted message:', decryptedMsg);
 
