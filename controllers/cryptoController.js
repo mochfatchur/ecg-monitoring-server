@@ -2,6 +2,9 @@ const {deriveKey} = require("../services/cryptography/hkdf");
 const EC = require('elliptic').ec;
 const ec = new EC('p256');
 const sessionStore = require('../keys/sessionStore');
+const sessionStoreClient = require('../keys/sessionStoreClient');
+const HKDF = require('futoin-hkdf');
+const crypto = require('crypto');
 
 const keyExchange = async (req, res) => {
     const deviceId = req.body.device_id;
@@ -69,4 +72,48 @@ const keyExchange = async (req, res) => {
 
 }
 
-module.exports = { keyExchange };
+const keyExchangeClient = async (req, res) => {
+    const { clientPublicKey, userId } = req.body;
+
+    if (!clientPublicKey) {
+        return res.status(400).send({
+            error: 'Pub key is required',
+        });
+    }
+
+    try {
+        console.log('test body: ', req.body);
+        const serverKeyPair = ec.genKeyPair();
+
+        // Decode client public key (assumed to be uncompressed point)
+        const clientPubBuf = Buffer.from(clientPublicKey, 'base64');
+        const clientKey = ec.keyFromPublic(clientPubBuf, 'hex');
+
+        const shared = serverKeyPair.derive(ec.keyFromPublic(clientKey, 'hex').getPublic());
+        console.log('sharedKey: ', shared);
+        const salt = Buffer.from(crypto.randomBytes(16));
+        console.log('salt: ', salt);
+        const derivedKey = HKDF(shared, 16, { salt, info: 'ecdh-session', hash: 'SHA-256' });
+        console.log('derivedKey: ', derivedKey);
+
+        // Store session key in memory
+        sessionStoreClient.set(userId, {
+            sessionKey: derivedKey// serverPublicKey: serverKey.getPublic(false, 'hex'),
+        });
+
+        console.log('auth store:', sessionStoreClient.get(userId));
+
+        res.json({
+            serverPublicKey: serverKeyPair.getPublic('hex'),
+            salt: salt.toString('hex')
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            message: error.message,
+        });
+    }
+
+}
+
+module.exports = { keyExchange, keyExchangeClient };
