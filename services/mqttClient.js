@@ -68,6 +68,26 @@ mqttClient.on('message', (topic, message) => {
   // Jika tidak ada, jangan teruskan proses
   if (!keyInfoWithPublisher) {
     console.log(`SessionKey with Publisher ${deviceId} not found.`);
+
+    console.log(`SessionKey with Publisher ${deviceId} not found.`);
+
+    // Kirim perintah keyExchange ulang ke IoT device
+    const commandTopic = `cmd/${deviceId}`;
+    const commandPayload = JSON.stringify({
+      type: 'keyExchangeRequest',
+      reason: 'SessionKeyMissing'
+    });
+
+    mqttClient.publish(commandTopic, commandPayload, { qos: 1 }, (err) => {
+      if (err) {
+        console.error(`[MQTT Client] Failed to publish key exchange request to ${commandTopic}:`, err);
+      } else {
+        console.log(`[MQTT Client] Sent keyExchange request to ${commandTopic}`);
+      }
+    });
+
+    // STOP: jangan teruskan kirim ke WebSocket
+    return;
   }
   const { sessionKey } = keyInfoWithPublisher;
   console.log(`GET: session key from ${deviceId}`, sessionKey);
