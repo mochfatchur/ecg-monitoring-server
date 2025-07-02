@@ -2,7 +2,6 @@ const {deriveKey} = require("../services/cryptography/hkdf");
 const EC = require('elliptic').ec;
 const ec = new EC('p256');
 const sessionStore = require('../keys/sessionStore');
-const sessionStoreClient = require('../keys/sessionStoreClient');
 const HKDF = require('futoin-hkdf');
 const crypto = require('crypto');
 
@@ -75,6 +74,12 @@ const keyExchange = async (req, res) => {
 const keyExchangeClient = async (req, res) => {
     const { clientPublicKey, userId } = req.body;
 
+    if (!userId) {
+        return res.status(400).send({
+            error: 'User ID is required.'
+        })
+    }
+
     if (!clientPublicKey) {
         return res.status(400).send({
             error: 'Pub key is required',
@@ -87,7 +92,7 @@ const keyExchangeClient = async (req, res) => {
 
         // Decode client public key (assumed to be uncompressed point)
         const clientPubBuf = Buffer.from(clientPublicKey, 'base64');
-        const clientKey = ec.keyFromPublic(clientPubBuf, 'hex');
+        const clientKey = ec.keyFromPublic(clientPubBuf, 'array'); // gunakan 'array' agar cocok dengan client
 
         const shared = serverKeyPair.derive(ec.keyFromPublic(clientKey, 'hex').getPublic());
         console.log('sharedKey: ', shared);
@@ -95,13 +100,14 @@ const keyExchangeClient = async (req, res) => {
         console.log('salt: ', salt);
         const derivedKey = HKDF(shared, 16, { salt, info: 'ecdh-session', hash: 'SHA-256' });
         console.log('derivedKey: ', derivedKey);
+        const sessionKey = derivedKey.toString('hex');
 
         // Store session key in memory
-        sessionStoreClient.set(userId, {
-            sessionKey: derivedKey// serverPublicKey: serverKey.getPublic(false, 'hex'),
+        sessionStore.set(userId, {
+            sessionKey: sessionKey
         });
 
-        console.log('auth store:', sessionStoreClient.get(userId));
+        console.log('auth store:', sessionStore.get(userId));
 
         res.json({
             serverPublicKey: serverKeyPair.getPublic('hex'),

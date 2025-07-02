@@ -35,4 +35,33 @@ function decryptAESGCM(sessionKey, ivHex, associatedData, cipherHex) {
     }
 }
 
-module.exports = { decryptAESGCM };
+/**
+ * Enkripsi AES-GCM
+ * @param {string|Buffer} sessionKey - 128-bit key dalam bentuk Buffer atau hex string
+ * @param {string} plaintext - Teks biasa yang akan dienkripsi
+ * @param {Buffer} associatedData - Buffer dari AAD (Associated Data)
+ * @returns {{ ivHex: string, cipherHex: string }} - IV dan cipher+tag dalam format hex
+ */
+function encryptAESGCM(sessionKey, plaintext, associatedData) {
+    const crypto = require('crypto');
+
+    // Konversi key ke Buffer jika perlu
+    const keyBuf = Buffer.isBuffer(sessionKey) ? sessionKey : Buffer.from(sessionKey, 'hex');
+
+    const iv = crypto.randomBytes(16);
+    const cipher = crypto.createCipheriv('aes-128-gcm', keyBuf, iv);
+
+    cipher.setAAD(associatedData);
+
+    const encrypted = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
+    const tag = cipher.getAuthTag();
+
+    const ciphertextWithTag = Buffer.concat([encrypted, tag]);
+
+    return {
+        ivHex: iv.toString('hex'),
+        cipherHex: ciphertextWithTag.toString('hex')
+    };
+}
+
+module.exports = { encryptAESGCM, decryptAESGCM };

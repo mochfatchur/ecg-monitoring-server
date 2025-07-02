@@ -2,7 +2,6 @@ const mqtt = require('mqtt');
 const { MQTT_BROKER_IP_ADDRESS, TOPIC_SUBSCRIBE } = require('../config/appConfig.js');
 const wss = require('../wsServer.js');
 const sessionStore = require('../keys/sessionStore');
-const sessionStoreCLient = require('../keys/sessionStoreCLient');
 const { decrypt } = require('../services/cryptography/ascon');
 const { decryptAESGCM } = require('../services/cryptography/aesgcm');
 const { checkTimestampDelay } = require("../utils/time");
@@ -18,15 +17,6 @@ const topicClientMap = new Map(); // topic -> Set of websocket clients
 
 mqttClient.on('connect', () => {
   console.log('Connected to MQTT Broker');
-
-  // Subscribe to topic
-  // mqttClient.subscribe(TOPIC_SUBSCRIBE, (err) => {
-  //   if (err) {
-  //     console.error(`Failed to subscribe to topic: ${TOPIC_SUBSCRIBE}`, err);
-  //   } else {
-  //     console.log(`Successfully subscribed to topic ${TOPIC_SUBSCRIBE}`);
-  //   }
-  // });
 });
 
 
@@ -53,8 +43,18 @@ function decryptMQTTMsgFromPublisher(dataFromPublisher, sessionKeyWithPublisher)
   return decryptedMsg;
 }
 
-function encryptedMsgForSubscriber(data, sessionKeyWithPublisher) {
+function encryptedMsgForSubscriber(data, ad, sessionKeyWithSubscriber) {
+  console.log('masuk enkripsi subscriber', data, ad, sessionKeyWithSubscriber);
 
+  const adBuffer = Buffer.from(ad);
+
+  const { ivHex, cipherHex } = encryptAESGCM(sessionKeyWithSubscriber, data, adBuffer);
+
+  return {
+    iv: Buffer.from(ivHex, 'hex').toString('base64'),      // kirim IV dalam base64
+    ad: ad,
+    msg: Buffer.from(cipherHex, 'hex').toString('base64')  // ciphertext+tag dalam base64
+  };
 }
 
 mqttClient.on('message', (topic, message) => {
@@ -90,22 +90,30 @@ mqttClient.on('message', (topic, message) => {
     return;
   }
   const { sessionKey } = keyInfoWithPublisher;
-  console.log(`GET: session key from ${deviceId}`, sessionKey);
+  // console.log(`[SERVER] session key from ${deviceId}`, sessionKey);
   // Jika ada Websocket client yang terhubung pada topic
   if (clients) {
     for (const ws of clients) {
       console.log('mau decrypt..........');
       let decryptedMsg = decryptMQTTMsgFromPublisher(message, sessionKey);
+      console.log('decrypted: ', decryptedMsg);
       // Get userId
       // Get sessionKey dengan publisher
-      // const keyInfoWithPublisher = sessionStoreCLient.get(deviceId);
+      const keyInfoWithSubscriber = sessionStore.get('1');
+      console.log(`[SERVER] session key from user ${JSON.stringify(keyInfoWithSubscriber, null, 2)}`);
+
       // Jika tidak ada, jangan teruskan proses
-      // if (!keyInfoWithPublisher) return;
-      // const { sessionKey } = keyInfoWithPublisher;
-      // let encryptedMsgForSubscriber = encryptedMsgForSubscriber(decryptedMsg, sessionStoreCLient);
+      if (!keyInfoWithSubscriber) return;
+      const sessionKeyClient = keyInfoWithSubscriber.sessionKey;
+      const data = JSON.parse(message.toString());
+      const { ad } = data;
+      console.log('msg: ', message)
+      console.log(`[SERVER] session key from client`, sessionKeyClient);
+      let encryptedMsg = encryptedMsgForSubscriber(decryptedMsg, ad, sessionKeyClient);
+      console.log('hasil encrypted: ', encryptedMsg);
       if (ws.readyState === ws.OPEN) {
-        ws.send(decryptedMsg);
-        console.log(`[Server] WS PUSH: Decrypted message: ${decryptedMsg} to ${ws}`);
+        ws.send(JSON.stringify(encryptedMsg));
+        // console.log(`[Server] WS PUSH: Decrypted message: ${encryptedMsg}`);
       }
     }
   }
