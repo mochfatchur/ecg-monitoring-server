@@ -10,13 +10,24 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      // define association here
+      // Jika user adalah admin → punya banyak perangkat
+      User.hasMany(models.Perangkat, {
+        foreignKey: 'user_admin_id',
+        as: 'perangkatDidaftarkan'
+      });
+
+      // Jika user adalah non-admin → hanya memonitor satu perangkat
+      User.hasOne(models.Monitoring, {
+        foreignKey: 'user_id',
+        as: 'monitoring'
+      });
     }
   }
   User.init({
     name: DataTypes.STRING,
     username: DataTypes.STRING,
-    password: DataTypes.STRING
+    password: DataTypes.STRING,
+    isAdmin: DataTypes.BOOLEAN
   }, {
     sequelize,
     modelName: 'User',
