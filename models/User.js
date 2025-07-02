@@ -16,11 +16,13 @@ module.exports = (sequelize, DataTypes) => {
         as: 'perangkatDidaftarkan'
       });
 
-      // Jika user adalah non-admin → hanya memonitor satu perangkat
-      User.hasOne(models.Monitoring, {
+      User.belongsToMany(models.Perangkat, {
+        through: models.AksesMonitoring,
         foreignKey: 'user_id',
-        as: 'monitoring'
+        otherKey: 'perangkat_id',
+        as: 'aksesPerangkat'
       });
+
     }
   }
   User.init({
@@ -31,6 +33,8 @@ module.exports = (sequelize, DataTypes) => {
   }, {
     sequelize,
     modelName: 'User',
+    tableName: 'users',
+    freezeTableName: true,
   });
   return User;
 };

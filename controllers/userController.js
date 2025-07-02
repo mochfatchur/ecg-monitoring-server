@@ -6,6 +6,10 @@ exports.register = async (req, res) => {
 
     console.log(username, password, name);
 
+    if (!username || !name || !password) {
+        return res.status(400).json({ message: 'Harap lengkapi semua bidang yang diperlukan.' });
+    }
+
     try {
         // Check if username already exists
         const existingUser = await User.findOne({ where: { username } });
@@ -21,6 +25,7 @@ exports.register = async (req, res) => {
             username,
             name,
             password: hashedPassword,
+            isAdmin: false,
         });
 
         res.status(201).json({
@@ -29,6 +34,7 @@ exports.register = async (req, res) => {
                 id: newUser.id,
                 username: newUser.username,
                 name: newUser.name,
+                isAdmin: false
             },
         });
     } catch (err) {

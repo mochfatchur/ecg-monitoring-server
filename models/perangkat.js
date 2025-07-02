@@ -1,12 +1,8 @@
 'use strict';
 const { Model } = require('sequelize');
+
 module.exports = (sequelize, DataTypes) => {
   class Perangkat extends Model {
-    /**
-     * Helper method for defining associations.
-     * This method is not a part of Sequelize lifecycle.
-     * The `models/index` file will call this method automatically.
-     */
     static associate(models) {
       // Perangkat dimiliki oleh satu user admin
       Perangkat.belongsTo(models.User, {
@@ -16,21 +12,31 @@ module.exports = (sequelize, DataTypes) => {
         onUpdate: 'CASCADE'
       });
 
-      // Perangkat dapat dimonitor oleh banyak user (tapi 1:1 per user)
-      Perangkat.hasMany(models.Monitoring, {
+      // Perangkat bisa diakses oleh banyak user melalui akses_monitoring
+      Perangkat.belongsToMany(models.User, {
+        through: models.AksesMonitoring,
         foreignKey: 'perangkat_id',
-        as: 'monitorings',
-        onDelete: 'CASCADE',
-        onUpdate: 'CASCADE'
+        otherKey: 'user_id',
+        as: 'aksesUsers'
       });
     }
   }
+
   Perangkat.init({
-    kode: DataTypes.STRING,
-    user_admin_id: DataTypes.INTEGER
+    kode: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true
+    },
+    user_admin_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    }
   }, {
     sequelize,
     modelName: 'Perangkat',
+    tableName: 'perangkat',
+    freezeTableName: true
   });
 
   return Perangkat;

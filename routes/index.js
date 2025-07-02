@@ -5,6 +5,9 @@ const router = express.Router();
 const userController = require('../controllers/userController.js');
 const authRoutes = require('./authRoutes');
 const cryptoRoutes = require('./cryptoRoutes');
+const perangkatRoutes = require('./perangkatRoutes');
+const aksesMonitoringRoutes = require('./aksesMonitoringRoutes');
+
 
 
 // Example route
@@ -20,5 +23,12 @@ router.post('/register', userController.register);
 
 // Cryptography routes
 router.use(cryptoRoutes);
+
+// Perangkat routes
+router.use(perangkatRoutes)
+
+// Akses Monitoring
+router.use(aksesMonitoringRoutes);
+
 
 module.exports = router;
