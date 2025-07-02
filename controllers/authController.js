@@ -29,7 +29,8 @@ exports.login = async (req, res) => {
             user: {
                 id: user.id,
                 name: user.username,
-                username: user.username
+                username: user.username,
+                isAdmin: user.isAdmin
             }
         });
     } catch (err) {
