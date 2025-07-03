@@ -42,3 +42,18 @@ exports.register = async (req, res) => {
         res.status(500).json({ message: 'Terjadi kesalahan server' });
     }
 };
+
+
+exports.getNonAdminUsers = async (req, res) => {
+    try {
+        const users = await User.findAll({
+            where: { isAdmin: false },
+            attributes: ['id', 'name', 'username']
+        });
+
+        res.json({ users });
+    } catch (error) {
+        console.error('Gagal mengambil user non-admin:', error);
+        res.status(500).json({ error: 'Terjadi kesalahan saat mengambil data user.' });
+    }
+};

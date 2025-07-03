@@ -52,7 +52,38 @@ exports.tambahAkses = async (req, res) => {
     }
 };
 
-exports.getAksesUser = async (req, res) => {
+exports.getAllAksesUser = async (req, res) => {
+    try {
+        // Hanya admin yang bisa mengakses semua data
+        if (!req.user.isAdmin) {
+            return res.status(403).json({ error: 'Hanya admin yang bisa mengakses data ini.' });
+        }
+        // Ambil semua akses monitoring
+        const aksesList = await AksesMonitoring.findAll({
+            include: [
+                {
+                    model: Perangkat,
+                    as: 'perangkat',
+                    attributes: ['id', 'kode']
+                },
+                {
+                    model: User,
+                    as: 'user',
+                    attributes: ['id', 'username']
+                }
+            ]
+        });
+
+        const perangkatList = aksesList.map(entry => entry.perangkat);
+
+        return res.status(200).json({ aksesList });
+    } catch (error) {
+        console.error('Gagal mengambil data akses:', error);
+        res.status(500).json({ error: 'Terjadi kesalahan saat mengambil akses perangkat.' });
+    }
+};
+
+exports.getAksesByUser = async (req, res) => {
     try {
         const user_id = req.user.id;
 

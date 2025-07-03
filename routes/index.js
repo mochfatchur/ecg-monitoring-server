@@ -4,6 +4,7 @@ const router = express.Router();
 
 const userController = require('../controllers/userController.js');
 const authRoutes = require('./authRoutes');
+const userRoutes = require('./userRoutes');
 const cryptoRoutes = require('./cryptoRoutes');
 const perangkatRoutes = require('./perangkatRoutes');
 const aksesMonitoringRoutes = require('./aksesMonitoringRoutes');
@@ -20,6 +21,9 @@ router.use(authRoutes);
 
 // Register route
 router.post('/register', userController.register);
+
+// User route
+router.use(userRoutes);
 
 // Cryptography routes
 router.use(cryptoRoutes);
