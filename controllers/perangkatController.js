@@ -35,16 +35,44 @@ exports.registerPerangkat = async (req, res) => {
 
 exports.getAllPerangkat = async (req, res) => {
     try {
-        // Ambil semua perangkat yang didaftarkan oleh admin tertentu
         if (!req.user || !req.user.isAdmin) {
             return res.status(403).json({ error: 'Hanya admin yang dapat melihat daftar perangkat.' });
         }
 
-        const perangkatList = await Perangkat.findAll({
-            where: { user_admin_id: req.user.id }
+        const {
+            page = 1,
+            rowsPerPage = 10,
+            sortBy = 'id',
+            descending = 'false',
+            search = ''
+        } = req.query;
+
+        const limit = parseInt(rowsPerPage);
+        const offset = (parseInt(page) - 1) * limit;
+        const order = [[sortBy, descending === 'true' ? 'DESC' : 'ASC']];
+
+        const { Op } = require('sequelize');
+        const where = {
+            user_admin_id: req.user.id
+        };
+
+        // Tambahkan filter pencarian (contoh pada kolom 'kode')
+        if (search) {
+            where.kode = { [Op.like]: `%${search}%` };
+        }
+
+        const { count, rows } = await Perangkat.findAndCountAll({
+            where,
+            order,
+            limit,
+            offset
         });
 
-        return res.json({ perangkat: perangkatList });
+        return res.json({
+            rows,
+            rowsNumber: count
+        });
+
     } catch (error) {
         console.error('Gagal mengambil daftar perangkat:', error);
         return res.status(500).json({ error: 'Terjadi kesalahan saat mengambil daftar perangkat.' });
