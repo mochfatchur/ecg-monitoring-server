@@ -3,6 +3,6 @@ const { keyExchange, keyExchangeClient } = require('../controllers/cryptoControl
 const router = express.Router();
 
 router.post('/key-exchange', keyExchange);
-router.post('/api/monitoring/key-exchange', keyExchangeClient);
+router.post('/monitoring/key-exchange', keyExchangeClient);
 
 module.exports = router;

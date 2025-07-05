@@ -1,5 +1,5 @@
 const mqtt = require('mqtt');
-const { MQTT_BROKER_IP_ADDRESS, TOPIC_SUBSCRIBE } = require('../config/appConfig.js');
+const { MQTT_BROKER_IP_ADDRESS } = require('../config/appConfig.js');
 const wss = require('../wsServer.js');
 const sessionStore = require('../keys/sessionStore');
 const { decrypt } = require('../services/cryptography/ascon');
