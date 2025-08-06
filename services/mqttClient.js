@@ -7,6 +7,7 @@ const { decryptAESGCM } = require('../services/cryptography/aesgcm');
 const { checkTimestampDelay } = require("../utils/time");
 const { encrypt } = require("./cryptography/ascon");
 const { encryptAESGCM } = require('../services/cryptography/aesgcm');
+const { runAEADTests } = require('../test/tamper.js');
 
 // MQTT Client Setup
 const mqttClient = mqtt.connect(MQTT_BROKER_IP_ADDRESS);
@@ -33,7 +34,14 @@ function decryptMQTTMsgFromPublisher(dataFromPublisher, sessionKeyWithPublisher)
   // ASCON AEAD
   // const decryptedMsg = decrypt(sessionKey, iv_hex, adBuffer, cipher_hex);
   //AES-GCM
-  const decryptedMsg = decryptAESGCM(sessionKeyWithPublisher, iv_hex, adBuffer, cipher_hex);
+  let decryptedMsg;
+  try {
+    // AES-GCM dekripsi
+    decryptedMsg = decryptAESGCM(sessionKeyWithPublisher, iv_hex, adBuffer, cipher_hex);
+  } catch (err) {
+    console.error("Gagal dekripsi: Tag autentikasi tidak valid atau data rusak.\n");
+    return null; // atau bisa throw err jika ingin ditangani di level atas
+  }
 
   // timestamp
   // const serverTimestamp = Math.floor(Date.now() / 1000); // sekarang dalam detik
@@ -44,7 +52,6 @@ function decryptMQTTMsgFromPublisher(dataFromPublisher, sessionKeyWithPublisher)
 }
 
 function encryptedMsgForSubscriber(data, ad, sessionKeyWithSubscriber) {
-  console.log('masuk enkripsi subscriber', data, ad, sessionKeyWithSubscriber);
 
   const adBuffer = Buffer.from(ad);
 
@@ -58,7 +65,7 @@ function encryptedMsgForSubscriber(data, ad, sessionKeyWithSubscriber) {
 }
 
 mqttClient.on('message', (topic, message) => {
-  console.log(`[MQTT Client] Received message from ${topic}: ${message.toString()}`);
+  console.log(`\n[MQTT Client] Received message from ${topic}: ${message.toString()}`);
   // Set of websocket clients
   const clients = topicClientMap.get(topic);
   // Get deviceId yang mem-publish data pada topic
@@ -94,23 +101,20 @@ mqttClient.on('message', (topic, message) => {
   // Jika ada Websocket client yang terhubung pada topic
   if (clients) {
     for (const ws of clients) {
-      console.log('mau decrypt..........');
+      runAEADTests(message, sessionKey, decryptMQTTMsgFromPublisher);
       let decryptedMsg = decryptMQTTMsgFromPublisher(message, sessionKey);
-      console.log('decrypted: ', decryptedMsg);
       // Get userId
       // Get sessionKey dengan publisher
       const keyInfoWithSubscriber = sessionStore.get('1');
-      console.log(`[SERVER] session key from user ${JSON.stringify(keyInfoWithSubscriber, null, 2)}`);
+      // console.log(`[SERVER] session key from user ${JSON.stringify(keyInfoWithSubscriber, null, 2)}`);
 
       // Jika tidak ada, jangan teruskan proses
       if (!keyInfoWithSubscriber) return;
       const sessionKeyClient = keyInfoWithSubscriber.sessionKey;
       const data = JSON.parse(message.toString());
       const { ad } = data;
-      console.log('msg: ', message)
-      console.log(`[SERVER] session key from client`, sessionKeyClient);
+      // console.log(`[SERVER] session key from client`, sessionKeyClient);
       let encryptedMsg = encryptedMsgForSubscriber(decryptedMsg, ad, sessionKeyClient);
-      console.log('hasil encrypted: ', encryptedMsg);
       if (ws.readyState === ws.OPEN) {
         ws.send(JSON.stringify(encryptedMsg));
         // console.log(`[Server] WS PUSH: Decrypted message: ${encryptedMsg}`);

@@ -1,4 +1,4 @@
-const {deriveKey} = require("../services/cryptography/hkdf");
+const { deriveKey } = require("../services/cryptography/hkdf");
 const EC = require('elliptic').ec;
 const ec = new EC('p256');
 const sessionStore = require('../keys/sessionStore');
