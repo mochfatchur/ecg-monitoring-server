@@ -8,6 +8,7 @@ const { checkTimestampDelay } = require("../utils/time");
 const { encrypt } = require("./cryptography/ascon");
 const { encryptAESGCM } = require('../services/cryptography/aesgcm');
 const { runAEADTests } = require('../test/tamper.js');
+const crypto = require("crypto");
 
 // MQTT Client Setup
 const mqttClient = mqtt.connect(MQTT_BROKER_IP_ADDRESS);
@@ -31,13 +32,13 @@ function decryptMQTTMsgFromPublisher(dataFromPublisher, sessionKeyWithPublisher)
   const adBuffer = Buffer.from(ad);  // misalnya "1724899123"
 
   // Decrypt Message
-  // ASCON AEAD
-  // const decryptedMsg = decrypt(sessionKey, iv_hex, adBuffer, cipher_hex);
   //AES-GCM
   let decryptedMsg;
   try {
     // AES-GCM dekripsi
-    decryptedMsg = decryptAESGCM(sessionKeyWithPublisher, iv_hex, adBuffer, cipher_hex);
+    // decryptedMsg = decryptAESGCM(sessionKeyWithPublisher, iv_hex, adBuffer, cipher_hex);
+    // ASCON AEAD
+    decryptedMsg = decrypt(sessionKeyWithPublisher, iv_hex, adBuffer, cipher_hex);
   } catch (err) {
     console.error("Gagal dekripsi: Tag autentikasi tidak valid atau data rusak.\n");
     return null; // atau bisa throw err jika ingin ditangani di level atas
@@ -53,14 +54,37 @@ function decryptMQTTMsgFromPublisher(dataFromPublisher, sessionKeyWithPublisher)
 
 function encryptedMsgForSubscriber(data, ad, sessionKeyWithSubscriber) {
 
-  const adBuffer = Buffer.from(ad);
+  // aes gcm
+  // const adBuffer = Buffer.from(ad);
+  //
+  // const { ivHex, cipherHex } = encryptAESGCM(sessionKeyWithSubscriber, data, adBuffer);
 
-  const { ivHex, cipherHex } = encryptAESGCM(sessionKeyWithSubscriber, data, adBuffer);
+  console.log('key frontend: ', sessionKeyWithSubscriber);
+
+  // ascon aead
+  const crypto = require('crypto');
+  const iv = crypto.randomBytes(16);
+  const ivHex = iv.toString('hex');
+  const keyHex = sessionKeyWithSubscriber; // key already hex from session store
+  // const adBuffer = Buffer.from(ad);
+  const cipherHex =  encrypt(keyHex, ivHex, ad, data, "Ascon-128");
+
+  console.log('coba decrypt: ', decrypt(keyHex, ivHex, ad, cipherHex, "Ascon-128"));
+
+  const payload = {
+    iv: iv.toString('base64'),
+    ad: ad,
+    msg: Buffer.from(cipherHex, 'hex').toString('base64')
+  }
+  console.log('mau dikirim ke FE: ', payload);
 
   return {
-    iv: Buffer.from(ivHex, 'hex').toString('base64'),      // kirim IV dalam base64
+    // iv: Buffer.from(ivHex, 'hex').toString('base64'),      // aes gcm iv
+    iv: iv.toString('base64'), // ascon iv
     ad: ad,
-    msg: Buffer.from(cipherHex, 'hex').toString('base64')  // ciphertext+tag dalam base64
+    // msg: Buffer.from(cipherHex, 'hex').toString('base64'),  // aes-gcm
+    msg: Buffer.from(cipherHex, 'hex').toString('base64') // ascon
+
   };
 }
 
@@ -101,8 +125,9 @@ mqttClient.on('message', (topic, message) => {
   // Jika ada Websocket client yang terhubung pada topic
   if (clients) {
     for (const ws of clients) {
-      runAEADTests(message, sessionKey, decryptMQTTMsgFromPublisher);
+      // runAEADTests(message, sessionKey, decryptMQTTMsgFromPublisher);
       let decryptedMsg = decryptMQTTMsgFromPublisher(message, sessionKey);
+      console.log('hasil dekripsi di server: ', decryptedMsg);
       // Get userId
       // Get sessionKey dengan publisher
       const keyInfoWithSubscriber = sessionStore.get('1');

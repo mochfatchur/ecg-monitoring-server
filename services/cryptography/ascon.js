@@ -456,15 +456,22 @@ function uri_encode_preserve_special_chars(text){
 
 // encryption
 function encrypt(key, nonce, ad, pt, variant){
-    var ct =  ascon_aead(key, nonce, ad, pt, "encrypt", variant);
-    var tag = ct.slice(-32);
-    return "ciphertext: " + ct.slice(0, -32) + "\ntag: " + tag;
+    // var ct =  ascon_aead(key, nonce, ad, pt, "encrypt", variant);
+    // var tag = ct.slice(-32);
+    // return "ciphertext: " + ct.slice(0, -32) + "\ntag: " + tag;
+
+    // jalankan AEAD encrypt dari fungsi utama
+    const ctWithTag = ascon_aead(key, nonce, ad, pt, "encrypt", variant);
+    // Fungsi ascon_aead sudah menghasilkan ciphertext+tag dalam format hex
+    return ctWithTag;
 }
 
 // decryption
 function decrypt(key, nonce, ad, ct, variant){
     var pt =  ascon_aead(key, nonce, ad, ct, "decrypt", variant);
     var verification = "";
+
+    console.log('plaintext: ', pt);
 
     if(pt != null){
         verification = "succeeded!";
