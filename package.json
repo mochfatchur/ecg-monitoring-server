@@ -29,6 +29,7 @@
     "futoin-hkdf": "^1.5.3",
     "jsonwebtoken": "^9.0.2",
     "mqtt": "^5.10.1",
+    "node-fetch": "^2.7.0",
     "pg": "^8.13.1",
     "pg-hstore": "^2.3.4",
     "sequelize": "^6.37.5",
